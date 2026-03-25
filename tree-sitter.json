@@ -1,0 +1,42 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "agl",
+      "camelcase": "Agl",
+      "title": "AgentGraphLanguage",
+      "scope": "source.agl",
+      "file-types": [
+        "agl"
+      ],
+      "injection-regex": "^agl$",
+      "class-name": "TreeSitterAgl"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "A minimal scripting language designed for orchestrating LLM workflows.",
+    "authors": [
+      {
+        "name": "NiRo",
+        "email": "n.a.rozhin@gmail.com",
+        "url": ""
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/lawliet-eng/agl-grammar",
+      "funding": ""
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "java": false,
+    "node": false,
+    "python": false,
+    "rust": false,
+    "swift": false,
+    "zig": false
+  }
+}
