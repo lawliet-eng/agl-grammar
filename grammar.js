@@ -2,12 +2,15 @@
  * tree-sitter grammar for AGL (Agent Graph Language)
  *
  * Node types of interest for syntax highlighting:
- *   builtin_call       — print(), len(), push(), str(), readFile(), httpGet(), etc.
- *   call_expression    — user-defined function calls
+ *   builtin_call         — print(), len(), push(), str(), readFile(), httpGet(), etc.
+ *   call_expression      — user-defined function calls
  *   function_declaration — fn Name(...) { }
- *   let_statement      — let x = ...
- *   identifier         — variables, parameters, function names
- *   builtin_identifier — builtin function names (separate node for theming)
+ *   let_statement        — let x = ...
+ *   identifier           — variables, parameters, function names
+ *   builtin_identifier   — builtin function names (separate node for theming)
+ *   template_literal     — `Hello, ${name}!`
+ *   template_chars       — static text segments inside a template
+ *   template_interpolation — ${expr} segments inside a template
  */
 
 const PREC = {
@@ -265,6 +268,7 @@ module.exports = grammar({
       $.number_literal,
       $.boolean_literal,
       $.nil_literal,
+      $.template_literal,
       $.array_literal,
       $.map_literal,
       $.parenthesized_expression,
@@ -318,6 +322,51 @@ module.exports = grammar({
       '(',
       $._expression,
       ')',
+    ),
+
+    // ── Template literals ────────────────────────────────────────────────────
+    //
+    // Backtick strings with ${expr} interpolation: `Hello, ${name}!`
+    //
+    // After the opening backtick every token must follow immediately
+    // (token.immediate) — no whitespace allowed inside the static text.
+    // Inside ${...} the parser switches back to normal expression mode,
+    // then the next template_chars / closing backtick are immediate again.
+    //
+    // Themes can target:
+    //   (template_literal) @string
+    //   (template_chars)   @string
+    //   (template_interpolation "${" @punctuation.special "}" @punctuation.special)
+    //   (template_interpolation (_) @embedded)
+
+    template_literal: $ => seq(
+      '`',
+      repeat(choice(
+        $.template_chars,
+        $.template_dollar,
+        $.template_interpolation,
+      )),
+      token.immediate('`'),
+    ),
+
+    // Runs of non-special chars: anything except ` \ $
+    // Escape sequences (\\, \`, \n, etc.) are also consumed here.
+    template_chars: $ => token.immediate(prec(1,
+      /([^`\\$]|\\[`\\nrt$\\])+/,
+    )),
+
+    // Lone $ not followed by { — matched as a single character.
+    // When the lexer sees ${ it prefers the two-char token in
+    // template_interpolation (maximal munch), so this only fires for
+    // a $ that is not the start of an interpolation.
+    template_dollar: $ => token.immediate('$'),
+
+    // ${expr} — opening ${ is immediate; closing } is a normal token
+    // so the expression inside parses with full whitespace support.
+    template_interpolation: $ => seq(
+      token.immediate('${'),
+      field('expression', $._expression),
+      '}',
     ),
   },
 });
